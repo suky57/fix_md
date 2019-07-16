@@ -10,6 +10,10 @@ fix_md.pl
 
 ./fix_md.pl [ OPTIONS ]
 
+=head DESCRIPTION
+
+This script will generate command's batch to repair broken RAID1 configuration for Lunix MD. It's main purpose is to solve situation occuring during disaster recovery scenarios.
+
 =cut
 
 use strict;
@@ -64,11 +68,14 @@ foreach my $rec (grep {/^md/} @md_info) {
 
 	unless ( scalar(@devices) > 1 ) {
 		my $uuid = $1 if qx(blkid) =~ m/$devices[0].* UUID=\"(\S+)\"/;
+		die "Error while UUID getting!" unless $uuid;
 		my $newbie = $1 if qx(blkid | fgrep -v $devices[0]) =~ m/(\S+):.*$uuid/mg;
 		print "# !!! Some devices are missing !!!\n" if $debug;
-		print "# UUID: $uuid has also $newbie\n" if $debug;
-		print "# Adding $newbie into $md.\n" if $debug;
-		print "mdadm --manage /dev/$md --add $newbie\n";
+		if ($newbie) {
+			print "# UUID: $uuid has also $newbie\n" if $debug;
+			print "# Adding $newbie into $md.\n" if $debug;
+			print "mdadm --manage /dev/$md --add $newbie\n";
+		}
 		
 	}
 	printf "\n" if $debug;
